@@ -17,7 +17,9 @@ var server = urls.createServer(app)
 
 // var configDB = require('./config/database.js');
 
-mongoose.connect("mongodb://localhost:27017/4nono"); 
+//mongoose.connect("mongodb://localhost:27017/4nono");
+// to avoid deprication in the connection string, I have to add { useNewUrlParser: true } 
+mongoose.connect('mongodb://nonowebDBA:Ma13579@localhost:27017/NonoDB', { useNewUrlParser: true })
 
 require('./config/passport')(passport); 
 
