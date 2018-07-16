@@ -49,7 +49,7 @@ module.exports = function(app, passport,server,nodemailer,generator) {
 			newCPUser.CP_User_DisplayName	 		= request.body.display_name;
 			newCPUser.CP_User_ProfilePic_Media_ID   = request.body.media_id;
 			newCPUser.CP_User_Bio   	 			= request.body.bio;
-			newCPUser.CP_User_RoleList_Role_ID   	= request.body.role_id;
+			newCPUser.CP_User_Permissions   		= [];
 			newCPUser.CP_User_IsActive				= 1;
 			newCPUser.save(function(error, doneadd){
 				if(error){
