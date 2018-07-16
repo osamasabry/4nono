@@ -1,6 +1,7 @@
 var CPUser        	 = require('../app/models/nono_cp_users');
 var Tags    		 = require('../app/models/nono_tags');
 var Categories    = require('../app/models/nono_categories');
+var Posts    = require('../app/models/nono_posts');
 
 
 var  nextCode ='';
@@ -129,7 +130,6 @@ module.exports = function(app, passport,server,nodemailer,generator) {
 	        } 
     	});
 	});
-
 
 
 	app.post('/addTag',function (request, response){	
@@ -349,8 +349,179 @@ module.exports = function(app, passport,server,nodemailer,generator) {
     	});
 	});
 
+	
+	app.get('/getPosts', function(request, response) {
+		Posts.find({}, function(err, post) {
+		    if (err){
+		    	response.send({message: 'Error'});
+		    }
+	        if (post) {
+	        	
+	            response.send(post);
+	        } 
+    	})
+	});
+
+	app.post('/addPost',function (request, response){	
+		async function AddNewPost(){
+			var GetNextId = await getNextPostID();
+			insetIntoPost(GetNextId);
+		}
+		function getNextPostID(){
+			return new Promise((resolve, reject) => {
+				Posts.getLastCode(function(err,post){
+					if (post) 
+						resolve( Number(post.Post_Code)+1);
+					else
+						resolve(1);
+				})
+			})
+		};
+		function insetIntoPost(GetNextId){
+			var newPost = new Posts();
+			newPost.Post_Code     		 			= GetNextId;
+			newPost.Post_Title 	     	 			= request.body.title;
+			newPost.Post_URL   	 					= request.body.url;
+			newPost.Post_Content	 				= request.body.content;
+			newPost.Post_FocusKeyword   			= request.body.focus_keyword;
+			newPost.Post_MetaDescription   	 	    = request.body.meta_desc ;
+			newPost.Post_FeaturedImage_Media_ID  	= request.body.featured_image_media_id;
+			newPost.Post_KeywordsList   			= request.body.keyeords_list ;
+			newPost.Post_CategoriesList_Category_ID = request.body.category_id;
+			newPost.Post_TagsList_Tag_ID 		 	= request.body.tag_id;
+			newPost.Post_CreatedBy_User_ID 			= request.body.create_by;
+			newPost.Post_CreatedOn 					= Date.now();
+			newPost.Post_SentToPublishOn 			= request.body.publish_on;
+			newPost.Post_PublishedBy_User_ID 		= request.body.publish_by;
+			newPost.Post_PublishedOn 				= request.body.publish_date;
+			newPost.Post_Status 					= 0;
+
+
+
+
+			newPost.save(function(error, doneadd){
+				if(error){
+					return response.send({
+						message: error
+					});
+				}
+				else{
+					return response.send({
+						message: true
+					});
+				}
+			});
+		}
+		AddNewPost();
+	});
+
+
+	app.get('/getActivePosts', function(request, response) {
+		Posts.find({Post_Status:1}, function(err, field) {
+		    if (err){
+		    	response.send({message: 'Error'});
+		    }
+	        if (field) {
+	        	
+	            response.send(field);
+	        } 
+    	});
+	});
+
+	app.post('/editPosts',function (request, response){
+
+		var newvalues = { $set: {
+				Post_Title 						: request.body.title,
+				Post_URL 						: request.body.url,
+				Post_Content 					: request.body.content,
+				Post_FocusKeyword 				: request.body.focus_keyword,
+				Post_MetaDescription 			: request.body.meta_desc,
+				Post_FeaturedImage_Media_ID 	: request.body.featured_image_media_id,
+				Post_KeywordsList 				: request.body.keywords_list,
+				Post_CategoriesList_Category_ID : request.body.category_id,
+				Post_TagsList_Tag_ID 			: request.body.tag_id,
+				Post_CreatedBy_User_ID 			: request.body.user_id,
+				Post_CreatedOn 					: Date.now(),
+				Post_SentToPublishOn 			: request.body.date_to_publish,
+				Post_PublishedBy_User_ID 		: request.body.publish_user_id,
+				Post_PublishedOn 				: request.body.date_published,
+				Post_Status 					: request.body.status,
+
+			} };
+
+		var myquery = { Post_Code: request.body.row_id }; 
+
+
+		Posts.findOneAndUpdate( myquery,newvalues, function(err, field) {
+    	    if (err){
+    	    	return response.send({
+					// user : request.user ,
+					message: 'Error'
+				});
+    	    }
+            if (!field) {
+            	return response.send({
+					// user : request.user ,
+					message: 'Category not exists'
+				});
+            } else {
+
+                return response.send({
+					message: true
+				});
+			}
+		})
+	});
+
+	app.post('/getPostByID',function (request, response){
+		var Searchquery = Number(request.body.row_id); 
+		Posts.find({'Post_Code':Searchquery},function(err, post) {
+			if (err){
+	    		return response.send({
+					message: err
+				});
+	    	}
+	    	if (post.length == 0) {
+				return response.send({
+					// user : request.user ,
+					message: 'No Posts Found !!',
+					length: post.length
+				});
+        	} else {
+				return response.send({
+					user : request.user ,
+					post: post
+				});
+			}
+		})
+    });	
     
-  
+    
+    app.post('/getPostByTitle',function (request, response){
+		var Searchquery = request.body.row_id; 
+		Posts.find({'Post_Title':Searchquery},function(err, post) {
+			if (err){
+	    		return response.send({
+					message: err
+				});
+	    	}
+	    	if (post.length == 0) {
+				return response.send({
+					// user : request.user ,
+					message: 'No Posts Found !!',
+					length: post.length
+				});
+        	} else {
+				return response.send({
+					user : request.user ,
+					post: post
+				});
+			}
+		})
+    });
+
+
+  	
 };
 function auth(req, res, next) {
   if (req.isAuthenticated()) { return next(); }
