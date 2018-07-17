@@ -1,5 +1,7 @@
 var express  = require('express');
+var cors = require('cors')
 var app      = express();
+app.use(cors({credentials: true, origin: true}));
 var port     = process.env.PORT || 3100;
 var mongoose = require('mongoose');
 var passport = require('passport');

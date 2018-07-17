@@ -8,6 +8,7 @@
     "async": "latest",
     "bcrypt-nodejs": "latest",
     "connect-flash": "^0.1.1",
+    "cors": "^2.8.4",
     "ejs": "0.8.5",
     "express": "3.4.8",
     "flash": "^1.1.0",
