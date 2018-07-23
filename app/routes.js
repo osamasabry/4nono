@@ -1,13 +1,21 @@
 var CPUser        	 = require('../app/models/nono_cp_users');
 var Tags    		 = require('../app/models/nono_tags');
-var Categories    = require('../app/models/nono_categories');
-var Posts    = require('../app/models/nono_posts');
+var Categories    	 = require('../app/models/nono_categories');
+var Posts    		 = require('../app/models/nono_posts');
+var Medias    		 = require('../app/models/nono_medias');
+
+var path = require('path'),
+	 fs = require('fs');
+var shell = require('shelljs');
+
 
 
 var  nextCode ='';
 var data = [];
 
-module.exports = function(app, passport,server,nodemailer,generator) {
+var UrlResizeImage =[];
+
+module.exports = function(app, passport,server,nodemailer,generator,tinify) {
 	
 	app.get('/logout', function(request, response) {
 		request.logout();
@@ -521,8 +529,139 @@ module.exports = function(app, passport,server,nodemailer,generator) {
     });
 
 
-  	
+    app.post('/addMedia',function (request, response){
+    	
+    	var filename  = request.files.image.originalFilename;
+    	var file_name = filename.split('.')[0] ;
+    	var extension = filename.split('.')[1] ;
+    	var date 	  = new Date();
+    	var year  	  = date.getFullYear();
+    	var month     = date.getMonth()+1; 
+    	
+    	var dir = path.resolve('./public/images/'+year+'/'+month);
+		if (!fs.existsSync(dir)){
+    		shell.mkdir('-p', dir);
+		}
+    	
+		var source = tinify.fromFile(request.files.image.path);
+
+		async function AddNewMedia(){
+			var UrlOriginalImage  = await CompressOrignalImage();
+			UrlResizeImage.push(await ResizeOrignalImage(150,150));
+			UrlResizeImage.push(await ResizeOrignalImage(565,355));
+			var GetNextId = await getNextMediaID();
+			insetIntoMedia(GetNextId,UrlOriginalImage,UrlResizeImage);
+		}
+
+		function CompressOrignalImage(){
+			return new Promise((resolve, reject) => {
+			    source.toFile(dir+'/'+Date.now() + '.' + filename);
+				resolve(dir+'/'+Date.now() + '.' + filename);
+			})
+		}
+
+		function ResizeOrignalImage(width,height){
+			return new Promise((resolve, reject) => {
+				var resized = source.resize({
+				  method: "fit",
+				  width: width,
+				  height: height
+				});
+				resized.toFile(dir+'/'+file_name+width+'x'+height+Date.now() +'.'+extension);
+				resolve(dir+'/'+file_name+width+'x'+height+Date.now() +'.'+extension);
+			})
+		}
+
+		function getNextMediaID(){
+			return new Promise((resolve, reject) => {
+				Medias.getLastCode(function(err,media){
+					if (media) 
+						resolve( Number(media.Media_Code)+1);
+					else
+						resolve(1);
+				})
+			})
+		}
+    	
+
+		function insetIntoMedia(GetNextId,UrlOriginalImage,UrlResizeImage){
+
+			var newMedia = new Medias();
+
+			newMedia.Media_Code     		 		= GetNextId;
+			newMedia.Media_Type 	     	 		= request.body.type;
+			newMedia.Media_URL   	 				= UrlOriginalImage;
+			newMedia.Media_images_url   	 		= UrlResizeImage;
+
+			newMedia.save(function(error, doneadd){
+				if(error){
+					return response.send({
+						message: error
+					});
+				}
+				else{
+					return response.send({
+						message: true,
+						media_id:GetNextId
+					});
+				}
+			});
+		}
+  		
+  		AddNewMedia();
+
+    });
+
+    app.post('/editMedia',function (request, response){
+
+		var newvalues = { $set: {
+			Media_Title	 				: request.body.title,
+			Media_Description   		: request.body.desc,
+			Media_DescriptionKeywords   : request.body.desc_keywords,
+			Media_ReplacedText  	    : request.body.replace_text,
+
+		} };
+
+		var myquery = { Media_Code: request.body.row_id }; 
+
+
+		Medias.findOneAndUpdate( myquery,newvalues, function(err, field) {
+    	    if (err){
+    	    	return response.send({
+					// user : request.user ,
+					message: 'Error'
+				});
+    	    }
+            if (!field) {
+            	return response.send({
+					// user : request.user ,
+					message: 'Media not exists'
+				});
+            } else {
+
+                return response.send({
+					message: true
+				});
+			}
+		})
+	});
+
+
+    app.get('/getMediaByID', function(request, response) {
+		Medias.find({Media_Code:request.query.row_id}, function(err, field) {
+		    if (err){
+		    	response.send({message: 'Error'});
+		    }
+	        if (field) {
+	        	
+	            response.send(field);
+	        } 
+    	});
+	});
+
+
 };
+
 function auth(req, res, next) {
   if (req.isAuthenticated()) { return next(); }
   res.redirect('/')
