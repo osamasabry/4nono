@@ -1,25 +1,24 @@
 var mongoose = require('mongoose');
 var bcrypt   = require('bcrypt-nodejs');
 
-var nono_TagsSchema = mongoose.Schema({
+var nono_MediasSchema = mongoose.Schema({
    
 		Media_Code                    :Number,
-        Media_Type                    :String,
+        Media_Type                    :Number,
         Media_URL                     :String,
-		Tag_MetaTitle                 :String,
+		Media_Title                   :String,
 		Media_Description             :String,
         Media_DescriptionKeywords     :[String],
         Media_ReplacedText            :String,
-        
-
+        Media_images_url    		  :[String],
 });
 
 
-var Tags = module.exports = mongoose.model('nono_tag', nono_TagsSchema);
+var Medias = module.exports = mongoose.model('nono_media', nono_MediasSchema);
 
 
 
 module.exports.getLastCode = function(callback){
     
-    Tags.findOne({},callback).sort({Tag_Code:-1});
+    Medias.findOne({},callback).sort({Media_Code:-1});
 }
