@@ -6,6 +6,7 @@ var nono_CpUserSchema = mongoose.Schema({
 		CP_User_Code                  :Number,
         CP_User_Name                  :String,
         CP_User_Password              :String,
+        CP_User_Email                 :String,
 		CP_User_DisplayName           :String,
 		CP_User_ProfilePic_Media_ID   :Number,
         CP_User_Bio                   :String,

@@ -47,6 +47,7 @@ module.exports = function(app, passport,server,nodemailer,generator) {
 			newCPUser.CP_User_Code     		 		= GetNextId;
 			newCPUser.CP_User_Name 	     	 		= request.body.user_name;
 			newCPUser.CP_User_Password   	 		= newCPUser.generateHash(request.body.password);
+			newCPUser.CP_User_Email					= request.body.email;
 			newCPUser.CP_User_DisplayName	 		= request.body.display_name;
 			newCPUser.CP_User_ProfilePic_Media_ID   = request.body.media_id;
 			newCPUser.CP_User_Bio   	 			= request.body.bio;
@@ -84,13 +85,11 @@ module.exports = function(app, passport,server,nodemailer,generator) {
 
 		var newUser = new CPUser;
 
-		var newvalues = { $set: {
-				CP_User_Name 				: request.body.user_name,
-				CP_User_Password 			: newUser.generateHash(request.body.desc), 
-				CP_User_DisplayName 		: request.body.display_name,
+		var newvalues = { $set: { 
+				CP_User_DisplayName 		: request.body.display_name, 
+				CP_User_Email				: request.body.email, 
 				CP_User_ProfilePic_Media_ID : request.body.media_id,
 				CP_User_Bio 				: request.body.bio,
-				CP_User_RoleList_Role_ID 	: request.body.role_id,
 				CP_User_IsActive 				: request.body.status,
 			} };
 
@@ -107,7 +106,39 @@ module.exports = function(app, passport,server,nodemailer,generator) {
             if (!field) {
             	return response.send({
 					// user : request.user ,
-					message: 'Usage Dose not exists'
+					message: 'Useer Dose not exists'
+				});
+            } else {
+
+                return response.send({
+					message: true
+				});
+			}
+		})
+	});
+
+	app.post('/editUserPermissions',function (request, response){
+
+		var newUser = new CPUser;
+
+		var newvalues = { $set: { 
+				CP_User_Permissions 		: request.body.permissions_list,
+			} };
+
+		var myquery = { CP_User_Code: request.body.row_id }; 
+
+
+		CPUser.findOneAndUpdate( myquery,newvalues, function(err, field) {
+    	    if (err){
+    	    	return response.send({
+					// user : request.user ,
+					message: 'Error'
+				});
+    	    }
+            if (!field) {
+            	return response.send({
+					// user : request.user ,
+					message: 'Useer Dose not exists'
 				});
             } else {
 
@@ -120,7 +151,7 @@ module.exports = function(app, passport,server,nodemailer,generator) {
 	
 
 	app.get('/getActiveUsers', function(request, response) {
-		CPUser.find({CP_User_IsActive:1}, function(err, field) {
+		CPUser.find({CP_User_IsActive:1},'CP_User_DisplayName CP_User_Email CP_User_Code CP_User_Bio CP_User_ProfilePic_Media_ID CP_User_Permissions -_id' , function(err, field) {
 		    if (err){
 		    	response.send({message: 'Error'});
 		    }
@@ -131,6 +162,17 @@ module.exports = function(app, passport,server,nodemailer,generator) {
     	});
 	});
 
+	app.post('/getUserPermissions', function(request, response) {
+		CPUser.findOne({CP_User_IsActive:1 , CP_User_Code : request.body.row_id}, 'CP_User_DisplayName CP_User_Permissions' , function(err, field) {
+		    if (err){
+		    	response.send({message: 'Error'});
+		    }
+	        if (field) {
+	        	
+	            response.send(field);
+	        } 
+    	});
+	});
 
 	app.post('/addTag',function (request, response){	
 		async function AddNewTag(){
